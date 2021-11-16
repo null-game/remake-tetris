@@ -43,8 +43,12 @@ class Mino {
     return array;
   }
 
+  /**
+   * @param {number} index
+   * @returns {number[][]}
+   */
   static getNextByIndex(index) {
-    return this.getTypeArray()[index];
+    return this.getTypeArray()[index].map(arr => arr.map(val => val * (Number(index) + 1)));
   }
 
   static getNext() {
@@ -121,6 +125,12 @@ class Mino {
     return this.typeIndex;
   }
 
+  /**
+   * 指定座標ブロック取得
+   * @param {number} x 
+   * @param {number} y 
+   * @returns {number}
+   */
   getPointBlock(x, y) {
     return this.tbl[y][x];
   }
@@ -144,13 +154,8 @@ class Field {
     const minoSize = this.mino.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    // if (minoSize === 3) {
-    //   this.positionX = fieldCenter - 2;
-    // } else {
-    //   this.positionX = fieldCenter - Math.floor(minoSize / 2);
-    // }
     this.positionX = fieldCenter - minoCenter;
-    this.positionY = 1;
+    this.positionY = -1;
   }
 
   getPositionBlock(x, y) {
@@ -200,6 +205,13 @@ class Field {
     }
   }
 
+  /**
+   * フィールドチェック
+   * @param {number} x 
+   * @param {number} y 
+   * @param {Mino} mino 
+   * @returns {boolean} 判定結果
+   */
   fieldCheck(x, y, mino) {
     const minoSize = mino.getSize();
     for (let yy = 0; yy < minoSize; yy++) {
@@ -228,6 +240,19 @@ class Field {
         }
       }
     }
+  }
+
+  getLineCount() {
+    return this.lineCount;
+  }
+
+  next() {
+    this.mino = this.nextMinoArray[0];
+    for (let i = 0; i < this.nextMinoArray.length - 1; i++) {
+      this.nextMinoArray[i] = this.nextMinoArray[i + 1];
+    }
+    this.nextMinoArray[this.nextMinoArray.length - 1] = new this.minoClass();
+    this.setStartPosition();
   }
 }
 
@@ -267,40 +292,30 @@ class View {
     // this.drawMino();
   }
 
+  /**
+   * フィールド描画
+   * @param {Field} field 
+   */
   drawField(field) {
     const g = this.context;
+    g.fillStyle = "black";
+    g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     const typeColorArray = this.constructor.getTypeColorArray();
-    const color = typeColorArray[1];
+    const color = typeColorArray[field.mino.typeIndex];
+    const BLOCK_SIZE = 30;
+    g.strokeStyle = "white";
+    g.lineWidth = 2;
     for (let y = 0; y < field.height; y++) {
       for (let x = 0; x < field.width; x++) {
         if (field.getPositionBlock(x, y)) {
-          g.fillStyle = color;
-          g.strokeStyle = "white";
-          g.lineWidth = 2;
+          g.fillStyle = typeColorArray[field.getPositionBlock(x, y) - 1];
           g.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        } else {
           g.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         }
       }
     }
-  }
-
-  drawMino(mino) {
-    // const g = this.virtualCanvas.getContext("2d");
-    // const g = this.context;
-    // const mino = field.mino;
-    // const typeColorMap = this.constructor.getTypeColorArray();
-    // const color = typeColorMap[mino.getTypeIndex()];
-    // for (let y = 0; y < mino.getSize(); y++) {
-    //   for (let x = 0; x < mino.getSize(); x++) {
-    //     if (mino.getPointBlock(x, y)) {
-    //       g.fillStyle = color;
-    //       g.strokeStyle = "white";
-    //       g.lineWidth = 2;
-    //       g.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    //       g.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    //     }
-    //   }
-    // }
   }
 
   drawBlock() {
@@ -309,6 +324,7 @@ class View {
 }
 
 class Game {
+
   static get minoClass() {
     return Mino;
   }
@@ -348,6 +364,7 @@ class Game {
       this.constructor.minoClass
     );
     this.startSettings();
+    this.stopFlg = true;
     this.start();
   }
 
@@ -356,11 +373,12 @@ class Game {
     this.line = 0;
     this.level = 1;
     this.downTime = 800;
+    this.nextTime = 500;
   }
 
   start() {
-    clearTimeout(this.downTimeOut);
-    clearTimeout(this.fixTimeOut);
+    clearTimeout(this.downTimeout);
+    clearTimeout(this.nextTimeout);
     const fieldClass = this.constructor.fieldClass;
     this.field = new fieldClass(this.constructor.width, this.constructor.height, this.constructor.nextCount, this.constructor.minoClass);
     this.startSettings();
@@ -369,9 +387,53 @@ class Game {
     this.view.drawField(this.field);
 
     const self = this;
+    this.downTimeout = setTimeout(() => {
+      self.down();
+    }, this.downTime);
+  }
+
+  rotateMino(dir) {
+    if (!this.stopFlg) {
+      this.field.rotateMino(dir);
+      this.view.drawField(this.field);
+    }
+  }
+
+  moveMino(dir) {
+    if (!this.stopFlg) {
+      if (dir === 'down') {
+        this.down();
+        return;
+      }
+      this.field.moveMino(dir);
+      this.view.drawField(this.field);
+    }
   }
 
   down() {
+    clearTimeout(this.downTimeout);
+    const self = this;
+    if (this.field.down()) {
+      this.stopFlg = true;
+      this.nextTimeout = setTimeout(() => {
+        self.next();
+      }, this.nextTime);
+    } else {
+      this.view.drawField(this.field);
+      this.downTimeout = setTimeout(() => {
+        self.down();
+      }, this.downTime);
+    }
+  }
 
+  next() {
+    clearTimeout(this.nextTimeout);
+    this.stopFlg = false;
+    this.field.next();
+    this.view.drawField(this.field);
+    const self = this;
+    this.downTime = setTimeout(() => {
+      self.down();
+    }, this.downTime);
   }
 }
