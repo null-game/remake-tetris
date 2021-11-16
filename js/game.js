@@ -1,6 +1,6 @@
 class Mino {
 
-  static randomTypeIndex = this.getRandomTypeIndexGenerator();
+  static randomizer = this.getRandomizer();
 
   static getTypeArray() {
     const array = [
@@ -48,20 +48,21 @@ class Mino {
    * @returns {number[][]}
    */
   static getNextByIndex(index) {
-    return this.getTypeArray()[index].map(arr => arr.map(val => val * (Number(index) + 1)));
+    index = Number(index);
+    return this.getTypeArray()[index].map(arr => arr.map(val => val * (index + 1)));
   }
 
   static getNext() {
-    const typeIndex = this.getNextTypeIndex();
-    const nextType = this.getNextByIndex(typeIndex);
-    return nextType;
+    const index = this.getNextIndex();
+    const next = this.getNextByIndex(index);
+    return next;
   }
 
-  static getNextTypeIndex() {
-    return this.randomTypeIndex.next().value;
+  static getNextIndex() {
+    return this.randomizer.next().value;
   }
 
-  static *getRandomTypeIndexGenerator() {
+  static *getRandomizer() {
     while (true) {
       const keys = [...Object.keys(this.getTypeArray())];
       for (let i = keys.length; 1 < i; i--) {
@@ -78,8 +79,8 @@ class Mino {
       return;
     }
 
-    this.typeIndex = this.constructor.getNextTypeIndex();
-    this.tbl = this.constructor.getNextByIndex(this.typeIndex);
+    this.index = this.constructor.getNextIndex();
+    this.tbl = this.constructor.getNextByIndex(this.index);
     this._angle = 0;
   }
 
@@ -122,7 +123,7 @@ class Mino {
   }
 
   getTypeIndex() {
-    return this.typeIndex;
+    return this.index;
   }
 
   /**
@@ -210,7 +211,7 @@ class Field {
    * @param {number} x 
    * @param {number} y 
    * @param {Mino} mino 
-   * @returns {boolean} 判定結果
+   * @returns {boolean}
    */
   fieldCheck(x, y, mino) {
     const minoSize = mino.getSize();
@@ -240,6 +241,54 @@ class Field {
         }
       }
     }
+    /* 
+    // ラインチェック
+    this.lineCount = 0;
+    for (let y = 0; y < this.height; y++) {
+      let lineFlg = true;
+      for (let x = 0; x < this.width; x++) {
+        if (this.getPositionBlock(x, y) <= 0) {
+          lineFlg = false;
+          break;
+        }
+      }
+      if (lineFlg) {
+        for (let i = y; i >= 0; i--) {
+          for (let j = 0; j < this.width; j--) {
+            this.tbl[j][i] = this.tbl[j][i - 1];
+          }
+        }
+        for (let j = 0; j < this.width; j++) {
+          this.tbl[j][0] = 0;
+        }
+        this.lineCount++;
+      }
+    }
+    // フィールドからはみ出ているブロックを処理
+    if (this.positionY < 0) {
+      for (let i = 0; i < this.minoClass.getSize(); i++) {
+        for (let j = 0; this.positionY + j < 0; j++) {
+          if (this.mino.getPointBlock(i, j) > 0) {
+            if (this.positionY + j + this.lineCount < 0) {
+              // 最終的にはみ出ている場合はゲームオーバー
+              this.gameOverFlg = true;
+            } else {
+              // ブロックをフィールドに設定
+              this.tbl[this.positionX + i][this.positionY + j + this.lineCount] = this.mino.getPointBlock(i, j);
+            }
+          }
+        }
+      }
+    }
+
+    // テトリミノを非表示
+    this.positionY = this.height + 1;
+
+    if (!this.gameOverFlg && !this.fieldCheck(this.startPositionX, this.startPositionY, this.nextMinoArray[0])) {
+      // 次に出てくるテトリミノと重なる場合はゲームオーバー
+      this.gameOverFlg = true;
+    }
+     */
   }
 
   getLineCount() {
@@ -281,27 +330,17 @@ class View {
     this.virtualCanvas.width = this.width;
     this.virtualCanvas.height = this.height;
     this.context = this.canvas.getContext("2d");
-
-    this.draw();
-  }
-
-  draw() {
-    this.context.fillStyle = "black";
-    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    // this.drawField();
-    // this.drawMino();
   }
 
   /**
    * フィールド描画
-   * @param {Field} field 
+   * @param {Field} field
    */
   drawField(field) {
     const g = this.context;
     g.fillStyle = "black";
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     const typeColorArray = this.constructor.getTypeColorArray();
-    const color = typeColorArray[field.mino.typeIndex];
     const BLOCK_SIZE = 30;
     g.strokeStyle = "white";
     g.lineWidth = 2;
@@ -357,9 +396,8 @@ class Game {
     const viewClass = this.constructor.viewClass;
     this.view = new viewClass(
       this.constructor.canvas,
-      // this.constructor.width,
-      // this.constructor.height,
-      window.innerWidth, window.innerHeight,
+      window.innerWidth,
+      window.innerHeight,
       this.constructor.nextCount,
       this.constructor.minoClass
     );
@@ -432,7 +470,7 @@ class Game {
     this.field.next();
     this.view.drawField(this.field);
     const self = this;
-    this.downTime = setTimeout(() => {
+    this.downTimeout = setTimeout(() => {
       self.down();
     }, this.downTime);
   }

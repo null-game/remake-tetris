@@ -3,6 +3,9 @@ const game = new Game();
 document.addEventListener('keydown', (e) => {
 	const key = e.key;
 	switch (key) {
+		case 'Escape':
+			game.start();
+			break;
 		case 'ArrowUp':
 			game.rotateMino('right');
 			break;
