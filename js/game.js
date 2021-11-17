@@ -73,9 +73,16 @@ class Mino {
     }
   }
 
+  /**
+   * コンストラクタ
+   * @param {Mino} mino 
+   * @returns 
+   */
   constructor(mino) {
     if (mino) {
+      this.index = mino.index;
       this.tbl = mino.tbl;
+      this._angle = mino._angle;
       return;
     }
 
@@ -85,11 +92,24 @@ class Mino {
   }
 
   set angle(value) {
+    if(value !== -90 && value !== 90) return;
+    const dummyTbl = [];
+    for (let y = 0; y < this.tbl.length; y++) {
+      dummyTbl[y] = [];
+      for (let x = 0; x < this.tbl[y].length; x++) {
+        if (value === -90) {
+          dummyTbl[y][x] = this.tbl[x][this.tbl[y].length - y - 1];
+        } else if (value === 90) {
+          dummyTbl[y][x] = this.tbl[this.tbl.length - x - 1][y];
+        }
+      }
+    }
+    this.tbl = dummyTbl;
     this._angle += value;
     if (this._angle < 0) {
       this._angle = 270;
-    } else if (this._angle > 360) {
-      this._angle = 90;
+    } else if (this._angle >= 360) {
+      this._angle = 0;
     }
   }
 
@@ -102,20 +122,11 @@ class Mino {
   }
 
   rotate(dir) {
-    const dummyTbl = [];
-    for (let y = 0; y < this.tbl.length; y++) {
-      dummyTbl[y] = [];
-      for (let x = 0; x < this.tbl[y].length; x++) {
-        if (dir === "left") {
-          this.angle = -90;
-          dummyTbl[y][x] = this.tbl[x][this.tbl[y].length - y - 1];
-        } else if (dir === "right") {
-          this.angle = 90;
-          dummyTbl[y][x] = this.tbl[this.tbl.length - x - 1][y];
-        }
-      }
+    if (dir === "left") {
+      this.angle = -90;
+    } else if (dir === "right") {
+      this.angle = 90;
     }
-    this.tbl = dummyTbl;
   }
 
   getSize() {
@@ -317,6 +328,7 @@ class View {
       "lightgreen",
     ];
   }
+
   constructor(canvas, width, height, nextCount, minoClass) {
     this.canvas = canvas;
     this.virtualCanvas = document.createElement("canvas");
