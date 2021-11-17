@@ -1,3 +1,10 @@
+class Point {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
 class Mino {
 
   static randomizer = this.getRandomizer();
@@ -92,7 +99,7 @@ class Mino {
   }
 
   set angle(value) {
-    if(value !== -90 && value !== 90) return;
+    if (value !== -90 && value !== 90) return;
     const dummyTbl = [];
     for (let y = 0; y < this.tbl.length; y++) {
       dummyTbl[y] = [];
@@ -156,6 +163,7 @@ class Field {
     this.minoClass = minoClass;
 
     this.tbl = [...Array(height)].map(() => Array(width).fill(0));
+    this.tbl[this.tbl.length - 1] = Array(width).fill(1);
     this.mino = new minoClass();
     this.nextMinoArray = [...Array(nextCount)].map(() => new minoClass());
 
@@ -166,19 +174,26 @@ class Field {
     const minoSize = this.mino.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    this.positionX = fieldCenter - minoCenter;
-    this.positionY = -1;
+    this.position = new Point(fieldCenter - minoCenter, 2);
+  }
+
+  getStartPosition(mino) {
+    const target = mino ?? this.mino;
+    const minoSize = target.getSize();
+    const fieldCenter = Math.floor(this.width / 2);
+    const minoCenter = Math.ceil(minoSize / 2);
+    return new Point(fieldCenter - minoCenter, 2);
   }
 
   getPositionBlock(x, y) {
     if (
-      this.positionX <= x &&
-      x < this.positionX + this.mino.getSize() &&
-      this.positionY <= y &&
-      y < this.positionY + this.mino.getSize() &&
-      this.mino.getPointBlock(x - this.positionX, y - this.positionY)
+      this.position.x <= x &&
+      x < this.position.x + this.mino.getSize() &&
+      this.position.y <= y &&
+      y < this.position.y + this.mino.getSize() &&
+      this.mino.getPointBlock(x - this.position.x, y - this.position.y)
     ) {
-      return this.mino.getPointBlock(x - this.positionX, y - this.positionY);
+      return this.mino.getPointBlock(x - this.position.x, y - this.position.y);
     }
     return this.tbl[y][x];
   }
@@ -190,26 +205,26 @@ class Field {
   rotateMino(dir) {
     const dummyMino = this.mino.clone();
     dummyMino.rotate(dir);
-    if (this.fieldCheck(this.positionX, this.positionY, dummyMino)) {
+    if (this.fieldCheck(this.position.x, this.position.y, dummyMino)) {
       this.mino = dummyMino;
     }
   }
 
   moveMino(dir) {
     if (dir === "left") {
-      if (this.fieldCheck(this.positionX - 1, this.positionY, this.mino)) {
-        this.positionX -= 1;
+      if (this.fieldCheck(this.position.x - 1, this.position.y, this.mino)) {
+        this.position.x -= 1;
       }
     } else if (dir === "right") {
-      if (this.fieldCheck(this.positionX + 1, this.positionY, this.mino)) {
-        this.positionX += 1;
+      if (this.fieldCheck(this.position.x + 1, this.position.y, this.mino)) {
+        this.position.x += 1;
       }
     }
   }
 
   down() {
-    if (this.fieldCheck(this.positionX, this.positionY + 1, this.mino)) {
-      this.positionY += 1;
+    if (this.fieldCheck(this.position.x, this.position.y + 1, this.mino)) {
+      this.position.y += 1;
       return false;
     } else {
       this.fixation();
@@ -228,6 +243,7 @@ class Field {
     const minoSize = mino.getSize();
     for (let yy = 0; yy < minoSize; yy++) {
       for (let xx = 0; xx < minoSize; xx++) {
+        // console.log(`x:${x + xx}`, `y:${y + yy}`);
         if (mino.getPointBlock(xx, yy)) {
           if (x + xx < 0 || x + xx >= this.width || y + yy >= this.height) {
             return false;
@@ -245,47 +261,50 @@ class Field {
     for (let y = 0; y < minoSize; y++) {
       for (let x = 0; x < minoSize; x++) {
         if (this.mino.getPointBlock(x, y)) {
-          if (this.positionY + y >= 0) {
-            this.tbl[this.positionY + y][this.positionX + x] =
+          if (this.position.y + y >= 0) {
+            this.tbl[this.position.y + y][this.position.x + x] =
               this.mino.getPointBlock(x, y);
           }
         }
       }
     }
-    /* 
+    console.log("test");
+    //* 
     // ラインチェック
     this.lineCount = 0;
     for (let y = 0; y < this.height; y++) {
       let lineFlg = true;
       for (let x = 0; x < this.width; x++) {
+        console.log(this.getPositionBlock(x, y));
         if (this.getPositionBlock(x, y) <= 0) {
           lineFlg = false;
           break;
         }
       }
+      console.log(lineFlg);
       if (lineFlg) {
-        for (let i = y; i >= 0; i--) {
-          for (let j = 0; j < this.width; j--) {
-            this.tbl[j][i] = this.tbl[j][i - 1];
+        for (let i = y; i > 0; i--) {
+          for (let j = 0; j < this.width; j++) {
+            this.tbl[i][j] = this.tbl[i][j - 1];
           }
         }
         for (let j = 0; j < this.width; j++) {
-          this.tbl[j][0] = 0;
+          this.tbl[0][j] = 0;
         }
         this.lineCount++;
       }
     }
     // フィールドからはみ出ているブロックを処理
-    if (this.positionY < 0) {
+    if (this.position.y < 0) {
       for (let i = 0; i < this.minoClass.getSize(); i++) {
-        for (let j = 0; this.positionY + j < 0; j++) {
-          if (this.mino.getPointBlock(i, j) > 0) {
-            if (this.positionY + j + this.lineCount < 0) {
+        for (let j = 0; this.position.y + j < 0; j++) {
+          if (this.mino.getPointBlock(j, i) > 0) {
+            if (this.position.y + i + this.lineCount < 0) {
               // 最終的にはみ出ている場合はゲームオーバー
               this.gameOverFlg = true;
             } else {
               // ブロックをフィールドに設定
-              this.tbl[this.positionX + i][this.positionY + j + this.lineCount] = this.mino.getPointBlock(i, j);
+              this.tbl[this.position.x + j][this.position.y + i + this.lineCount] = this.mino.getPointBlock(j, i);
             }
           }
         }
@@ -293,13 +312,15 @@ class Field {
     }
 
     // テトリミノを非表示
-    this.positionY = this.height + 1;
+    this.position.y = this.height + 1;
 
-    if (!this.gameOverFlg && !this.fieldCheck(this.startPositionX, this.startPositionY, this.nextMinoArray[0])) {
+    const next = this.nextMinoArray[0];
+    const startPosition = this.getStartPosition(next);
+    if (!this.gameOverFlg && !this.fieldCheck(startPosition.x, startPosition.y, next)) {
       // 次に出てくるテトリミノと重なる場合はゲームオーバー
       this.gameOverFlg = true;
     }
-     */
+    //*/
   }
 
   getLineCount() {
@@ -356,14 +377,15 @@ class View {
     const BLOCK_SIZE = 30;
     g.strokeStyle = "white";
     g.lineWidth = 2;
-    for (let y = 0; y < field.height; y++) {
+    const showStartY = 4;
+    for (let y = showStartY; y < field.height; y++) {
       for (let x = 0; x < field.width; x++) {
         if (field.getPositionBlock(x, y)) {
           g.fillStyle = typeColorArray[field.getPositionBlock(x, y) - 1];
-          g.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-          g.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.fillRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.strokeRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         } else {
-          g.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.strokeRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         }
       }
     }
@@ -393,7 +415,7 @@ class Game {
   }
 
   static get height() {
-    return 20;
+    return 24;
   }
 
   static get nextCount() {

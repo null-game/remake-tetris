@@ -6,17 +6,27 @@ document.addEventListener('keydown', (e) => {
 		case 'Escape':
 			game.start();
 			break;
+		case 'w':
 		case 'ArrowUp':
-			game.rotateMino('right');
+			// game.rotateMino('right');
 			break;
+		case 's':
 		case 'ArrowDown':
 			game.moveMino('down');
 			break;
+		case 'a':
 		case 'ArrowLeft':
 			game.moveMino('left');
 			break;
+		case 'd':
 		case 'ArrowRight':
 			game.moveMino('right');
+			break;
+		case 'q':
+			game.rotateMino('left');
+			break;
+		case 'e':
+			game.rotateMino('right');
 			break;
 	}
 });
