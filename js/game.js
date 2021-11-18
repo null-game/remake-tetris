@@ -1,10 +1,3 @@
-class Point {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-  }
-}
-
 class Mino {
 
   static randomizer = this.getRandomizer();
@@ -158,14 +151,15 @@ class Mino {
 class Field {
   constructor(width, height, nextCount, minoClass) {
     this.width = width;
-    this.height = height;
+    this.height = height + 4;
     this.nextCount = nextCount;
     this.minoClass = minoClass;
 
-    this.tbl = [...Array(height)].map(() => Array(width).fill(0));
-    this.tbl[this.tbl.length - 1] = Array(width).fill(1);
+    this.tbl = [...Array(this.height)].map(() => Array(this.width).fill(0));
+    // テスト用に1ライン埋め
+    this.tbl[this.tbl.length - 1] = Array(this.width).fill(1);
     this.mino = new minoClass();
-    this.nextMinoArray = [...Array(nextCount)].map(() => new minoClass());
+    this.nextMinoArray = [...Array(this.nextCount)].map(() => new minoClass());
 
     this.setStartPosition();
   }
@@ -174,7 +168,7 @@ class Field {
     const minoSize = this.mino.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    this.position = new Point(fieldCenter - minoCenter, 2);
+    this.position = new Vecotr2(fieldCenter - minoCenter, 2);
   }
 
   getStartPosition(mino) {
@@ -182,7 +176,7 @@ class Field {
     const minoSize = target.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    return new Point(fieldCenter - minoCenter, 2);
+    return new Vecotr2(fieldCenter - minoCenter, 2);
   }
 
   getPositionBlock(x, y) {
@@ -213,18 +207,18 @@ class Field {
   moveMino(dir) {
     if (dir === "left") {
       if (this.fieldCheck(this.position.x - 1, this.position.y, this.mino)) {
-        this.position.x -= 1;
+        this.position.add(Vecotr2.left);
       }
     } else if (dir === "right") {
       if (this.fieldCheck(this.position.x + 1, this.position.y, this.mino)) {
-        this.position.x += 1;
+        this.position.add(Vecotr2.right);
       }
     }
   }
 
   down() {
     if (this.fieldCheck(this.position.x, this.position.y + 1, this.mino)) {
-      this.position.y += 1;
+      this.position.add(Vecotr2.down);
       return false;
     } else {
       this.fixation();
@@ -268,8 +262,6 @@ class Field {
         }
       }
     }
-    console.log("test");
-    //* 
     // ラインチェック
     this.lineCount = 0;
     for (let y = 0; y < this.height; y++) {
@@ -320,7 +312,6 @@ class Field {
       // 次に出てくるテトリミノと重なる場合はゲームオーバー
       this.gameOverFlg = true;
     }
-    //*/
   }
 
   getLineCount() {
@@ -415,7 +406,7 @@ class Game {
   }
 
   static get height() {
-    return 24;
+    return 20;
   }
 
   static get nextCount() {
@@ -445,7 +436,7 @@ class Game {
     this.line = 0;
     this.level = 1;
     this.downTime = 800;
-    this.nextTime = 500;
+    this.nextTime = 300;
   }
 
   start() {
