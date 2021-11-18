@@ -1,4 +1,4 @@
-class Vecotr2 {
+class Vector2 {
   static add(v1, v2) {
     return v1.clone().add(v2);
   }
@@ -31,28 +31,28 @@ class Vecotr2 {
     return (Vector2.dot(v1, v2) === 0);
   }
 
-  static get zero() {
+  static get ZERO() {
     return new Vector2(0, 0);
   }
 
-  static get one() {
+  static get ONE() {
     return new Vector2(1, 1);
   }
 
-  static get right() {
+  static get RIGHT() {
     return new Vector2(1, 0);
   }
 
-  static get left() {
+  static get LEFT() {
     return new Vector2(-1, 0);
   }
 
-  static get up() {
-    return new Vector2(0, 1);
+  static get UP() {
+    return new Vector2(0, -1);
   }
 
-  static get down() {
-    return new Vector2(0, -1);
+  static get DOWN() {
+    return new Vector2(0, 1);
   }
 
   constructor(x = 0, y = 0) {
@@ -67,7 +67,7 @@ class Vecotr2 {
   }
 
   clone() {
-    return new Vecotr2(this.x, this.y);
+    return new Vector2(this.x, this.y);
   }
 
   add(v) {

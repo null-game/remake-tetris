@@ -157,7 +157,7 @@ class Field {
 
     this.tbl = [...Array(this.height)].map(() => Array(this.width).fill(0));
     // テスト用に1ライン埋め
-    this.tbl[this.tbl.length - 1] = Array(this.width).fill(1);
+    // this.tbl[this.tbl.length - 1] = Array(this.width).fill(1);
     this.mino = new minoClass();
     this.nextMinoArray = [...Array(this.nextCount)].map(() => new minoClass());
 
@@ -168,7 +168,7 @@ class Field {
     const minoSize = this.mino.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    this.position = new Vecotr2(fieldCenter - minoCenter, 2);
+    this.position = new Vector2(fieldCenter - minoCenter, 2);
   }
 
   getStartPosition(mino) {
@@ -176,7 +176,7 @@ class Field {
     const minoSize = target.getSize();
     const fieldCenter = Math.floor(this.width / 2);
     const minoCenter = Math.ceil(minoSize / 2);
-    return new Vecotr2(fieldCenter - minoCenter, 2);
+    return new Vector2(fieldCenter - minoCenter, 2);
   }
 
   getPositionBlock(x, y) {
@@ -207,18 +207,18 @@ class Field {
   moveMino(dir) {
     if (dir === "left") {
       if (this.fieldCheck(this.position.x - 1, this.position.y, this.mino)) {
-        this.position.add(Vecotr2.left);
+        this.position.add(Vector2.LEFT);
       }
     } else if (dir === "right") {
       if (this.fieldCheck(this.position.x + 1, this.position.y, this.mino)) {
-        this.position.add(Vecotr2.right);
+        this.position.add(Vector2.RIGHT);
       }
     }
   }
 
   down() {
     if (this.fieldCheck(this.position.x, this.position.y + 1, this.mino)) {
-      this.position.add(Vecotr2.down);
+      this.position.add(Vector2.DOWN);
       return false;
     } else {
       this.fixation();
@@ -251,6 +251,7 @@ class Field {
   }
 
   fixation() {
+    console.log(this.tbl);
     const minoSize = this.mino.getSize();
     for (let y = 0; y < minoSize; y++) {
       for (let x = 0; x < minoSize; x++) {
@@ -267,17 +268,15 @@ class Field {
     for (let y = 0; y < this.height; y++) {
       let lineFlg = true;
       for (let x = 0; x < this.width; x++) {
-        console.log(this.getPositionBlock(x, y));
         if (this.getPositionBlock(x, y) <= 0) {
           lineFlg = false;
           break;
         }
       }
-      console.log(lineFlg);
       if (lineFlg) {
         for (let i = y; i > 0; i--) {
           for (let j = 0; j < this.width; j++) {
-            this.tbl[i][j] = this.tbl[i][j - 1];
+            this.tbl[i][j] = this.tbl[i - 1][j];
           }
         }
         for (let j = 0; j < this.width; j++) {
