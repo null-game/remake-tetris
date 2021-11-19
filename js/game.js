@@ -59,7 +59,7 @@ class Mino {
   }
 
   static getNextIndex() {
-    return this.randomizer.next().value;
+    return Number(this.randomizer.next().value);
   }
 
   static *getRandomizer() {
@@ -117,14 +117,17 @@ class Mino {
     return this._angle;
   }
 
+  /**
+   * @returns {Mino}
+   */
   clone() {
     return new this.constructor(this);
   }
 
   rotate(dir) {
-    if (dir === "left") {
+    if (dir === "LEFT") {
       this.angle = -90;
-    } else if (dir === "right") {
+    } else if (dir === "RIGHT") {
       this.angle = 90;
     }
   }
@@ -149,7 +152,7 @@ class Mino {
 }
 
 class Field {
-  constructor(width, height, nextCount, minoClass) {
+  constructor(width, height, nextCount, minoClass = Mino) {
     this.width = width;
     this.height = height + 4;
     this.nextCount = nextCount;
@@ -197,19 +200,37 @@ class Field {
   }
 
   rotateMino(dir) {
+    dir = dir.toUpperCase();
     const dummyMino = this.mino.clone();
     dummyMino.rotate(dir);
-    if (this.fieldCheck(this.position.x, this.position.y, dummyMino)) {
-      this.mino = dummyMino;
+
+    let patternList;
+    console.log(dummyMino.getTypeIndex());
+    console.log(dummyMino.getTypeIndex() === 0);
+    if (dummyMino.getTypeIndex() === 0) {
+      patternList = vectorPattern[0][this.mino.angle][dir];
+      console.log(patternList);
+      console.log(dummyMino);
+    } else {
+      patternList = vectorPattern[1][this.mino.angle][dir];
+    }
+
+    for (const vector of patternList) {
+      if (this.checkMove(vector, dummyMino)) {
+        this.position.add(vector);
+        this.mino = dummyMino;
+        return;
+      }
     }
   }
 
   moveMino(dir) {
-    if (dir === "left") {
+    dir = dir.toUpperCase();
+    if (dir === "LEFT") {
       if (this.fieldCheck(this.position.x - 1, this.position.y, this.mino)) {
         this.position.add(Vector2.LEFT);
       }
-    } else if (dir === "right") {
+    } else if (dir === "RIGHT") {
       if (this.fieldCheck(this.position.x + 1, this.position.y, this.mino)) {
         this.position.add(Vector2.RIGHT);
       }
@@ -237,7 +258,6 @@ class Field {
     const minoSize = mino.getSize();
     for (let yy = 0; yy < minoSize; yy++) {
       for (let xx = 0; xx < minoSize; xx++) {
-        // console.log(`x:${x + xx}`, `y:${y + yy}`);
         if (mino.getPointBlock(xx, yy)) {
           if (x + xx < 0 || x + xx >= this.width || y + yy >= this.height) {
             return false;
@@ -250,8 +270,24 @@ class Field {
     return true;
   }
 
+  checkMove(vector, mino) {
+    const pos = this.position.clone().add(vector);
+    const minoSize = mino.getSize();
+    for (let y = 0; y < minoSize; y++) {
+      for (let x = 0; x < minoSize; x++) {
+        if (mino.getPointBlock(x, y)) {
+          if (pos.x + x < 0 || pos.x + x >= this.width || pos.y + y >= this.height) {
+            return false;
+          } else if (this.tbl[pos.y + y][pos.x + x]) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   fixation() {
-    console.log(this.tbl);
     const minoSize = this.mino.getSize();
     for (let y = 0; y < minoSize; y++) {
       for (let x = 0; x < minoSize; x++) {
@@ -435,7 +471,7 @@ class Game {
     this.line = 0;
     this.level = 1;
     this.downTime = 800;
-    this.nextTime = 300;
+    this.nextTime = 0;
   }
 
   start() {
@@ -462,8 +498,9 @@ class Game {
   }
 
   moveMino(dir) {
+    dir = dir.toUpperCase();
     if (!this.stopFlg) {
-      if (dir === 'down') {
+      if (dir === 'DOWN') {
         this.down();
         return;
       }
