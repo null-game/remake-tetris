@@ -42,6 +42,14 @@ class Mino {
     ];
   }
 
+  static get MAX_SIZE() {
+    let max = 0;
+    for (const type of this.getTypeArray()) {
+      if (max < type.length) max = type.length;
+    }
+    return max;
+  }
+
   /**
    * @param {number} index
    * @returns {number[][]}
@@ -151,13 +159,54 @@ class Mino {
 }
 
 class Field {
-  constructor(width, height, nextCount, minoClass = Mino) {
-    this.width = width;
-    this.height = height + 4;
+  static get MOVE_PATTERN() {
+    return [
+      {
+        0: {
+          LEFT: [Vector2.ZERO, Vector2.LEFT, Vector2.RIGHT.times(2), Vector2.add(Vector2.LEFT, Vector2.UP.times(2)), Vector2.add(Vector2.RIGHT.times(2), Vector2.DOWN)],
+          RIGHT: [Vector2.ZERO, Vector2.LEFT.times(2), Vector2.RIGHT, Vector2.add(Vector2.LEFT.times(2), Vector2.DOWN), Vector2.add(Vector2.RIGHT, Vector2.UP.times(2))],
+        },
+        90: {
+          LEFT: [Vector2.ZERO, Vector2.RIGHT.times(2), Vector2.LEFT, Vector2.add(Vector2.RIGHT.times(2), Vector2.UP), Vector2.add(Vector2.LEFT, Vector2.DOWN.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.LEFT, Vector2.RIGHT.times(2), Vector2.add(Vector2.LEFT, Vector2.UP.times(2)), Vector2.add(Vector2.RIGHT.times(2), Vector2.DOWN)],
+        },
+        180: {
+          LEFT: [Vector2.ZERO, Vector2.RIGHT, Vector2.LEFT.times(2), Vector2.add(Vector2.RIGHT, Vector2.DOWN.times(2)), Vector2.add(Vector2.LEFT.times(2), Vector2.UP)],
+          RIGHT: [Vector2.ZERO, Vector2.RIGHT.times(2), Vector2.LEFT, Vector2.add(Vector2.RIGHT.times(2), Vector2.UP), Vector2.add(Vector2.LEFT, Vector2.DOWN.times(2))],
+        },
+        270: {
+          LEFT: [Vector2.ZERO, Vector2.RIGHT, Vector2.LEFT.times(2), Vector2.add(Vector2.LEFT.times(2), Vector2.DOWN), Vector2.add(Vector2.RIGHT, Vector2.UP.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.LEFT.times(2), Vector2.RIGHT, Vector2.add(Vector2.RIGHT, Vector2.DOWN.times(2)), Vector2.add(Vector2.LEFT.times(2), Vector2.UP)],
+        },
+      },
+      {
+        0: {
+          LEFT: [Vector2.ZERO, Vector2.RIGHT, Vector2.RIGHT_UP, Vector2.DOWN.times(2), Vector2.add(Vector2.RIGHT, Vector2.DOWN.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.LEFT, Vector2.ONE.inverse, Vector2.DOWN.times(2), Vector2.add(Vector2.LEFT, Vector2.DOWN.times(2))],
+        },
+        90: {
+          LEFT: [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.UP.times(2), Vector2.add(Vector2.RIGHT, Vector2.UP.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.UP.times(2), Vector2.add(Vector2.RIGHT, Vector2.UP.times(2))],
+        },
+        180: {
+          LEFT: [Vector2.ZERO, Vector2.LEFT, Vector2.ONE.inverse, Vector2.DOWN.times(2), Vector2.add(Vector2.LEFT, Vector2.DOWN.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.RIGHT, Vector2.RIGHT_UP, Vector2.DOWN.times(2), Vector2.add(Vector2.RIGHT, Vector2.DOWN.times(2))],
+        },
+        270: {
+          LEFT: [Vector2.ZERO, Vector2.LEFT, Vector2.LEFT_DOWN, Vector2.UP.times(2), Vector2.add(Vector2.LEFT, Vector2.UP.times(2))],
+          RIGHT: [Vector2.ZERO, Vector2.LEFT, Vector2.LEFT_DOWN, Vector2.UP.times(2), Vector2.add(Vector2.LEFT, Vector2.UP.times(2))],
+        },
+      },
+    ];
+  }
+
+  constructor(col, row, nextCount, minoClass = Mino) {
+    this.col = col;
+    this.row = row + minoClass.MAX_SIZE;
     this.nextCount = nextCount;
     this.minoClass = minoClass;
 
-    this.tbl = [...Array(this.height)].map(() => Array(this.width).fill(0));
+    this.tbl = [...Array(this.row)].map(() => Array(this.col).fill(0));
     this.mino = new minoClass();
     this.nextMinoArray = [...Array(this.nextCount)].map(() => new minoClass());
 
@@ -165,16 +214,13 @@ class Field {
   }
 
   setStartPosition() {
-    const minoSize = this.mino.getSize();
-    const fieldCenter = Math.floor(this.width / 2);
-    const minoCenter = Math.ceil(minoSize / 2);
-    this.position = new Vector2(fieldCenter - minoCenter, 2);
+    this.position = this.getStartPosition();
   }
 
   getStartPosition(mino) {
     const target = mino ?? this.mino;
     const minoSize = target.getSize();
-    const fieldCenter = Math.floor(this.width / 2);
+    const fieldCenter = Math.floor(this.col / 2);
     const minoCenter = Math.ceil(minoSize / 2);
     return new Vector2(fieldCenter - minoCenter, 2);
   }
@@ -202,10 +248,11 @@ class Field {
     dummyMino.rotate(dir);
 
     let patternList;
+    const movePattern = this.constructor.MOVE_PATTERN;
     if (dummyMino.getTypeIndex() === 0) {
-      patternList = vectorPattern[0][this.mino.angle][dir];
+      patternList = movePattern[0][this.mino.angle][dir];
     } else {
-      patternList = vectorPattern[1][this.mino.angle][dir];
+      patternList = movePattern[1][this.mino.angle][dir];
     }
 
     for (const vector of patternList) {
@@ -220,18 +267,18 @@ class Field {
   moveMino(dir) {
     dir = dir.toUpperCase();
     if (dir === "LEFT") {
-      if (this.fieldCheck(this.position.x - 1, this.position.y, this.mino)) {
+      if (this.checkMove(Vector2.LEFT)) {
         this.position.add(Vector2.LEFT);
       }
     } else if (dir === "RIGHT") {
-      if (this.fieldCheck(this.position.x + 1, this.position.y, this.mino)) {
+      if (this.checkMove(Vector2.RIGHT)) {
         this.position.add(Vector2.RIGHT);
       }
     }
   }
 
   down() {
-    if (this.fieldCheck(this.position.x, this.position.y + 1, this.mino)) {
+    if (this.checkMove(Vector2.DOWN)) {
       this.position.add(Vector2.DOWN);
       return false;
     } else {
@@ -240,38 +287,19 @@ class Field {
     }
   }
 
-  /**
-   * フィールドチェック
-   * @param {number} x 
-   * @param {number} y 
-   * @param {Mino} mino 
-   * @returns {boolean}
-   */
-  fieldCheck(x, y, mino) {
+  checkMove(vector, mino = this.mino) {
+    const position = this.position.clone().add(vector);
+    return this.fieldCheck(position, mino);
+  }
+
+  fieldCheck(position, mino) {
     const minoSize = mino.getSize();
     for (let yy = 0; yy < minoSize; yy++) {
       for (let xx = 0; xx < minoSize; xx++) {
         if (mino.getPointBlock(xx, yy)) {
-          if (x + xx < 0 || x + xx >= this.width || y + yy >= this.height) {
+          if (position.x + xx < 0 || position.x + xx >= this.col || position.y + yy >= this.row) {
             return false;
-          } else if (this.tbl[y + yy][x + xx]) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
-  }
-
-  checkMove(vector, mino) {
-    const pos = this.position.clone().add(vector);
-    const minoSize = mino.getSize();
-    for (let y = 0; y < minoSize; y++) {
-      for (let x = 0; x < minoSize; x++) {
-        if (mino.getPointBlock(x, y)) {
-          if (pos.x + x < 0 || pos.x + x >= this.width || pos.y + y >= this.height) {
-            return false;
-          } else if (this.tbl[pos.y + y][pos.x + x]) {
+          } else if (this.tbl[position.y + yy][position.x + xx]) {
             return false;
           }
         }
@@ -294,9 +322,9 @@ class Field {
     }
     // ラインチェック
     this.lineCount = 0;
-    for (let y = 0; y < this.height; y++) {
+    for (let y = 0; y < this.row; y++) {
       let lineFlg = true;
-      for (let x = 0; x < this.width; x++) {
+      for (let x = 0; x < this.col; x++) {
         if (this.getPositionBlock(x, y) <= 0) {
           lineFlg = false;
           break;
@@ -304,39 +332,23 @@ class Field {
       }
       if (lineFlg) {
         for (let i = y; i > 0; i--) {
-          for (let j = 0; j < this.width; j++) {
+          for (let j = 0; j < this.col; j++) {
             this.tbl[i][j] = this.tbl[i - 1][j];
           }
         }
-        for (let j = 0; j < this.width; j++) {
+        for (let j = 0; j < this.col; j++) {
           this.tbl[0][j] = 0;
         }
         this.lineCount++;
       }
     }
-    // フィールドからはみ出ているブロックを処理
-    if (this.position.y < 0) {
-      for (let i = 0; i < this.minoClass.getSize(); i++) {
-        for (let j = 0; this.position.y + j < 0; j++) {
-          if (this.mino.getPointBlock(j, i) > 0) {
-            if (this.position.y + i + this.lineCount < 0) {
-              // 最終的にはみ出ている場合はゲームオーバー
-              this.gameOverFlg = true;
-            } else {
-              // ブロックをフィールドに設定
-              this.tbl[this.position.x + j][this.position.y + i + this.lineCount] = this.mino.getPointBlock(j, i);
-            }
-          }
-        }
-      }
-    }
 
     // テトリミノを非表示
-    this.position.y = this.height + 1;
+    this.position.y = this.row + 1;
 
     const next = this.nextMinoArray[0];
     const startPosition = this.getStartPosition(next);
-    if (!this.gameOverFlg && !this.fieldCheck(startPosition.x, startPosition.y, next)) {
+    if (!this.gameOverFlg && !this.fieldCheck(startPosition, next)) {
       // 次に出てくるテトリミノと重なる場合はゲームオーバー
       this.gameOverFlg = true;
     }
@@ -397,8 +409,8 @@ class View {
     g.strokeStyle = "white";
     g.lineWidth = 2;
     const showStartY = 4;
-    for (let y = showStartY; y < field.height; y++) {
-      for (let x = 0; x < field.width; x++) {
+    for (let y = showStartY; y < field.row; y++) {
+      for (let x = 0; x < field.col; x++) {
         if (field.getPositionBlock(x, y)) {
           g.fillStyle = typeColorArray[field.getPositionBlock(x, y) - 1];
           g.fillRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -417,42 +429,14 @@ class View {
 
 class Game {
 
-  static get minoClass() {
-    return Mino;
-  }
-
-  static get fieldClass() {
-    return Field;
-  }
-
-  static get viewClass() {
-    return View;
-  }
-
-  static get width() {
-    return 10;
-  }
-
-  static get height() {
-    return 20;
-  }
-
-  static get nextCount() {
-    return 6;
-  }
-
-  static get canvas() {
-    return document.getElementById("game-view");
-  }
-
   constructor() {
-    const viewClass = this.constructor.viewClass;
+    const viewClass = Const.VIEW_CLASS;
     this.view = new viewClass(
-      this.constructor.canvas,
+      Const.MAIN_CANVAS,
       window.innerWidth,
       window.innerHeight,
-      this.constructor.nextCount,
-      this.constructor.minoClass
+      Const.NEXT_COUNT,
+      Const.MINO_CLASS
     );
     this.startSettings();
     this.stopFlg = true;
@@ -470,8 +454,13 @@ class Game {
   start() {
     clearTimeout(this.downTimeout);
     clearTimeout(this.nextTimeout);
-    const fieldClass = this.constructor.fieldClass;
-    this.field = new fieldClass(this.constructor.width, this.constructor.height, this.constructor.nextCount, this.constructor.minoClass);
+    const fieldClass = Const.FIELD_CLASS;
+    this.field = new fieldClass(
+      Const.FIELD_COL,
+      Const.FIELD_ROW,
+      Const.NEXT_COUNT,
+      Const.MINO_CLASS
+    );
     this.startSettings();
     this.stopFlg = false;
 
