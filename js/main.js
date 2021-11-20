@@ -8,6 +8,7 @@ document.addEventListener('keydown', (e) => {
 			break;
 		case 'w':
 		case 'ArrowUp':
+			game.hardDrop();
 			break;
 		case 's':
 		case 'ArrowDown':

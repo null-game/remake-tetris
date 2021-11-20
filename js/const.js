@@ -6,4 +6,5 @@ class Const {
 	static get FIELD_ROW() { return 20 }
 	static get NEXT_COUNT() { return 6 }
 	static get MAIN_CANVAS() { return document.getElementById('game-view') }
+	static get BLOCK_SIZE() { return 30 }
 }

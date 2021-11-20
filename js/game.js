@@ -383,7 +383,7 @@ class View {
 
   constructor(canvas, width, height, nextCount, minoClass) {
     this.canvas = canvas;
-    this.virtualCanvas = document.createElement("canvas");
+    this.virtualCanvas = document.createElement('canvas');
     this.width = width;
     this.height = height;
     this.nextCount = nextCount;
@@ -391,9 +391,10 @@ class View {
 
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.virtualCanvas.width = this.width;
-    this.virtualCanvas.height = this.height;
-    this.context = this.canvas.getContext("2d");
+    this.virtualCanvas.width = Const.BLOCK_SIZE * Const.FIELD_COL;
+    this.virtualCanvas.height = Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE);
+    this.context = this.canvas.getContext('2d');
+    this.virtualContext = this.virtualCanvas.getContext('2d')
   }
 
   /**
@@ -401,25 +402,30 @@ class View {
    * @param {Field} field
    */
   drawField(field) {
-    const g = this.context;
+    this.context.fillStyle = "black";
+    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    const g = this.virtualContext;
     g.fillStyle = "black";
-    g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    g.fillRect(0, 0, this.virtualCanvas.width, this.virtualCanvas.height);
     const typeColorArray = this.constructor.getTypeColorArray();
-    const BLOCK_SIZE = 30;
     g.strokeStyle = "white";
     g.lineWidth = 2;
-    const showStartY = 4;
-    for (let y = showStartY; y < field.row; y++) {
+    for (let y = 0; y < field.row; y++) {
       for (let x = 0; x < field.col; x++) {
         if (field.getPositionBlock(x, y)) {
           g.fillStyle = typeColorArray[field.getPositionBlock(x, y) - 1];
-          g.fillRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-          g.strokeRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.fillRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+          g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
         } else {
-          g.strokeRect(x * BLOCK_SIZE, (y - showStartY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
         }
       }
     }
+    const showStartY = Const.BLOCK_SIZE * this.minoClass.MAX_SIZE + Const.BLOCK_SIZE * 0.7;
+    const paddingX = this.canvas.width / 2 - this.virtualCanvas.width / 2;
+    const paddingY = this.canvas.height / 2 - (this.virtualCanvas.height - showStartY) / 2;
+    this.context.drawImage(this.virtualCanvas, 0, showStartY, this.virtualCanvas.width, this.virtualCanvas.height,
+      paddingX, paddingY, this.virtualCanvas.width, this.virtualCanvas.height);
   }
 
   drawBlock() {
@@ -505,6 +511,18 @@ class Game {
         self.down();
       }, this.downTime);
     }
+  }
+
+  hardDrop() {
+    clearTimeout(this.downTimeout);
+    const self = this;
+    while (!this.field.down()) {
+      this.score++;
+    }
+    this.stopFlg = true;
+    this.nextTimeout = setTimeout(() => {
+      self.next();
+    }, this.nextTime);
   }
 
   next() {
