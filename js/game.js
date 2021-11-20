@@ -3,7 +3,7 @@ class Mino {
   static randomizer = this.getRandomizer();
 
   static getTypeArray() {
-    const array = [
+    return [
       [
         [0, 0, 0, 0],
         [1, 1, 1, 1],
@@ -40,7 +40,6 @@ class Mino {
         [0, 0, 0],
       ],
     ];
-    return array;
   }
 
   /**
@@ -159,8 +158,6 @@ class Field {
     this.minoClass = minoClass;
 
     this.tbl = [...Array(this.height)].map(() => Array(this.width).fill(0));
-    // テスト用に1ライン埋め
-    // this.tbl[this.tbl.length - 1] = Array(this.width).fill(1);
     this.mino = new minoClass();
     this.nextMinoArray = [...Array(this.nextCount)].map(() => new minoClass());
 
@@ -205,12 +202,8 @@ class Field {
     dummyMino.rotate(dir);
 
     let patternList;
-    console.log(dummyMino.getTypeIndex());
-    console.log(dummyMino.getTypeIndex() === 0);
     if (dummyMino.getTypeIndex() === 0) {
       patternList = vectorPattern[0][this.mino.angle][dir];
-      console.log(patternList);
-      console.log(dummyMino);
     } else {
       patternList = vectorPattern[1][this.mino.angle][dir];
     }

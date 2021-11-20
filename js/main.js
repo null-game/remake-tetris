@@ -8,7 +8,6 @@ document.addEventListener('keydown', (e) => {
 			break;
 		case 'w':
 		case 'ArrowUp':
-			// game.rotateMino('right');
 			break;
 		case 's':
 		case 'ArrowDown':
