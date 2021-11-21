@@ -391,10 +391,14 @@ class View {
 
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.virtualCanvas.width = Const.BLOCK_SIZE * Const.FIELD_COL;
-    this.virtualCanvas.height = Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE);
     this.context = this.canvas.getContext('2d');
-    this.virtualContext = this.virtualCanvas.getContext('2d')
+
+    this.fieldRect = new Rectangle(
+      0, Const.BLOCK_SIZE * this.minoClass.MAX_SIZE + Const.BLOCK_SIZE * 0.7,
+      Const.BLOCK_SIZE * Const.FIELD_COL, Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE)
+    );
+    // this.virtualCanvas.width = Const.BLOCK_SIZE * Const.FIELD_COL;
+    // this.virtualCanvas.height = Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE);
   }
 
   /**
@@ -402,11 +406,12 @@ class View {
    * @param {Field} field
    */
   drawField(field) {
-    this.context.fillStyle = "black";
-    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const g = this.virtualContext;
+    const fieldCanvas = this.virtualCanvas;
+    fieldCanvas.width = this.fieldRect.right;
+    fieldCanvas.height = this.fieldRect.bottom;
+    const g = fieldCanvas.getContext('2d');
     g.fillStyle = "black";
-    g.fillRect(0, 0, this.virtualCanvas.width, this.virtualCanvas.height);
+    g.fillRect(0, 0, fieldCanvas.width, fieldCanvas.height);
     const typeColorArray = this.constructor.getTypeColorArray();
     g.strokeStyle = "white";
     g.lineWidth = 2;
@@ -422,10 +427,13 @@ class View {
       }
     }
     const showStartY = Const.BLOCK_SIZE * this.minoClass.MAX_SIZE + Const.BLOCK_SIZE * 0.7;
-    const paddingX = this.canvas.width / 2 - this.virtualCanvas.width / 2;
-    const paddingY = this.canvas.height / 2 - (this.virtualCanvas.height - showStartY) / 2;
-    this.context.drawImage(this.virtualCanvas, 0, showStartY, this.virtualCanvas.width, this.virtualCanvas.height,
-      paddingX, paddingY, this.virtualCanvas.width, this.virtualCanvas.height);
+    const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
+    const paddingY = this.canvas.height / 2 - (fieldCanvas.height - showStartY) / 2;
+    this.context.fillStyle = "black";
+    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.drawImage(fieldCanvas,
+      0, showStartY, fieldCanvas.width, fieldCanvas.height - showStartY,
+      paddingX, paddingY, fieldCanvas.width, fieldCanvas.height - showStartY);
   }
 
   drawBlock() {
