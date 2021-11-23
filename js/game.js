@@ -90,6 +90,7 @@ class Mino {
       this.index = mino.index;
       this.tbl = mino.tbl;
       this._angle = mino._angle;
+      this.position = mino.position;
       return;
     }
 
@@ -210,7 +211,7 @@ class Field {
   }
 
   setStartPosition(mino = this.mino) {
-    this.position = this.getStartPosition(mino);
+    this.mino.position = this.getStartPosition(mino);
   }
 
   getStartPosition(mino = this.mino) {
@@ -221,15 +222,6 @@ class Field {
   }
 
   getPositionBlock(x, y) {
-    if (
-      this.position.x <= x &&
-      x < this.position.x + this.mino.getSize() &&
-      this.position.y <= y &&
-      y < this.position.y + this.mino.getSize() &&
-      this.mino.getPointBlock(x - this.position.x, y - this.position.y)
-    ) {
-      return this.mino.getPointBlock(x - this.position.x, y - this.position.y);
-    }
     return this.tbl[y][x];
   }
 
@@ -252,7 +244,7 @@ class Field {
 
     for (const vector of patternList) {
       if (this.checkMove(vector, dummyMino)) {
-        this.position.add(vector);
+        this.mino.position.add(vector);
         this.mino = dummyMino;
         return;
       }
@@ -263,18 +255,18 @@ class Field {
     dir = dir.toUpperCase();
     if (dir === "LEFT") {
       if (this.checkMove(Vector2.LEFT)) {
-        this.position.add(Vector2.LEFT);
+        this.mino.position.add(Vector2.LEFT);
       }
     } else if (dir === "RIGHT") {
       if (this.checkMove(Vector2.RIGHT)) {
-        this.position.add(Vector2.RIGHT);
+        this.mino.position.add(Vector2.RIGHT);
       }
     }
   }
 
   down() {
     if (this.checkMove(Vector2.DOWN)) {
-      this.position.add(Vector2.DOWN);
+      this.mino.position.add(Vector2.DOWN);
       return false;
     } else {
       this.fixation();
@@ -283,7 +275,7 @@ class Field {
   }
 
   checkMove(vector, mino = this.mino) {
-    const position = this.position.clone().add(vector);
+    const position = this.mino.position.clone().add(vector);
     return this.fieldCheck(position, mino);
   }
 
@@ -308,8 +300,8 @@ class Field {
     for (let y = 0; y < minoSize; y++) {
       for (let x = 0; x < minoSize; x++) {
         if (this.mino.getPointBlock(x, y)) {
-          if (this.position.y + y >= 0) {
-            this.tbl[this.position.y + y][this.position.x + x] =
+          if (this.mino.position.y + y >= 0) {
+            this.tbl[this.mino.position.y + y][this.mino.position.x + x] =
               this.mino.getPointBlock(x, y);
           }
         }
@@ -339,7 +331,7 @@ class Field {
     }
 
     // テトリミノを非表示
-    this.position.y = this.row + 1;
+    this.mino.position.y = this.row + 1;
 
     const next = this.nextMinoArray[0];
     const startPosition = this.getStartPosition(next);
@@ -366,13 +358,13 @@ class Field {
 class View {
   static get COLOR_LIST() {
     return [
-      "skyblue",
+      "deepskyblue",
       "orange",
       "blue",
-      "purple",
+      "violet",
       "yellow",
-      "red",
-      "lightgreen",
+      "orangered",
+      "lime",
     ];
   }
 
@@ -429,6 +421,7 @@ class View {
         }
       }
     }
+    this.drawMino(field);
     const sx = 0;
     const sy = Const.BLOCK_SIZE * Mino.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
     const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
@@ -447,6 +440,23 @@ class View {
     const mino = field.mino;
     const fieldCanvas = this.virtualCanvas;
     const g = fieldCanvas.getContext('2d');
+    const minoSize = mino.getSize();
+
+    const shadowPosition = Vector2.ZERO;
+    while (field.checkMove(shadowPosition.clone().add(Vector2.DOWN))) {
+      shadowPosition.add(Vector2.DOWN);
+    }
+
+    for (const v = Vector2.ZERO; v.y < minoSize; v.y++) {
+      for (v.x = 0; v.x < minoSize; v.x++) {
+        if (mino.getPointBlock(v.x, v.y)) {
+          const color = View.COLOR_LIST[mino.getPointBlock(v.x, v.y) - 1];
+          const position = v.clone().add(mino.position);
+          this.drawBlock(g, position, color);
+          this.drawBlock(g, position.add(shadowPosition), color, 0.3);
+        }
+      }
+    }
   }
 
   draw() {
