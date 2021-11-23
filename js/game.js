@@ -2,7 +2,7 @@ class Mino {
 
   static randomizer = this.getRandomizer();
 
-  static getTypeArray() {
+  static get TYPE_LIST() {
     return [
       [
         [0, 0, 0, 0],
@@ -44,7 +44,7 @@ class Mino {
 
   static get MAX_SIZE() {
     let max = 0;
-    for (const type of this.getTypeArray()) {
+    for (const type of this.TYPE_LIST) {
       if (max < type.length) max = type.length;
     }
     return max;
@@ -56,7 +56,7 @@ class Mino {
    */
   static getNextByIndex(index) {
     index = Number(index);
-    return this.getTypeArray()[index].map(arr => arr.map(val => val * (index + 1)));
+    return this.TYPE_LIST[index].map(arr => arr.map(val => val * (index + 1)));
   }
 
   static getNext() {
@@ -71,7 +71,7 @@ class Mino {
 
   static *getRandomizer() {
     while (true) {
-      const keys = [...Object.keys(this.getTypeArray())];
+      const keys = [...Object.keys(this.TYPE_LIST)];
       for (let i = keys.length; 1 < i; i--) {
         const k = Math.floor(Math.random() * i);
         [keys[k], keys[i - 1]] = [keys[i - 1], keys[k]];
@@ -93,8 +93,8 @@ class Mino {
       return;
     }
 
-    this.index = this.constructor.getNextIndex();
-    this.tbl = this.constructor.getNextByIndex(this.index);
+    this.index = Mino.getNextIndex();
+    this.tbl = Mino.getNextByIndex(this.index);
     this._angle = 0;
   }
 
@@ -124,11 +124,8 @@ class Mino {
     return this._angle;
   }
 
-  /**
-   * @returns {Mino}
-   */
   clone() {
-    return new this.constructor(this);
+    return new Mino(this);
   }
 
   rotate(dir) {
@@ -200,26 +197,24 @@ class Field {
     ];
   }
 
-  constructor(col, row, nextCount, minoClass = Mino) {
+  constructor(col, row, nextCount) {
     this.col = col;
-    this.row = row + minoClass.MAX_SIZE;
+    this.row = row + Mino.MAX_SIZE;
     this.nextCount = nextCount;
-    this.minoClass = minoClass;
 
     this.tbl = [...Array(this.row)].map(() => Array(this.col).fill(0));
-    this.mino = new minoClass();
-    this.nextMinoArray = [...Array(this.nextCount)].map(() => new minoClass());
+    this.mino = new Mino();
+    this.nextMinoArray = [...Array(this.nextCount)].map(() => new Mino());
 
     this.setStartPosition();
   }
 
-  setStartPosition() {
-    this.position = this.getStartPosition();
+  setStartPosition(mino = this.mino) {
+    this.position = this.getStartPosition(mino);
   }
 
-  getStartPosition(mino) {
-    const target = mino ?? this.mino;
-    const minoSize = target.getSize();
+  getStartPosition(mino = this.mino) {
+    const minoSize = mino.getSize();
     const fieldCenter = Math.floor(this.col / 2);
     const minoCenter = Math.ceil(minoSize / 2);
     return new Vector2(fieldCenter - minoCenter, 2);
@@ -248,7 +243,7 @@ class Field {
     dummyMino.rotate(dir);
 
     let patternList;
-    const movePattern = this.constructor.MOVE_PATTERN;
+    const movePattern = Field.MOVE_PATTERN;
     if (dummyMino.getTypeIndex() === 0) {
       patternList = movePattern[0][this.mino.angle][dir];
     } else {
@@ -363,13 +358,13 @@ class Field {
     for (let i = 0; i < this.nextMinoArray.length - 1; i++) {
       this.nextMinoArray[i] = this.nextMinoArray[i + 1];
     }
-    this.nextMinoArray[this.nextMinoArray.length - 1] = new this.minoClass();
+    this.nextMinoArray[this.nextMinoArray.length - 1] = new Mino();
     this.setStartPosition();
   }
 }
 
 class View {
-  static getTypeColorArray() {
+  static get COLOR_LIST() {
     return [
       "skyblue",
       "orange",
@@ -381,24 +376,37 @@ class View {
     ];
   }
 
-  constructor(canvas, width, height, nextCount, minoClass) {
+  constructor(canvas, width, height, nextCount) {
     this.canvas = canvas;
     this.virtualCanvas = document.createElement('canvas');
     this.width = width;
     this.height = height;
     this.nextCount = nextCount;
-    this.minoClass = minoClass;
 
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.context = this.canvas.getContext('2d');
 
     this.fieldRect = new Rectangle(
-      0, Const.BLOCK_SIZE * this.minoClass.MAX_SIZE + Const.BLOCK_SIZE * 0.7,
-      Const.BLOCK_SIZE * Const.FIELD_COL, Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE)
+      0, Const.BLOCK_SIZE * Mino.MAX_SIZE + Const.BLOCK_SIZE * 0.7,
+      Const.BLOCK_SIZE * Const.FIELD_COL, Const.BLOCK_SIZE * (Const.FIELD_ROW + Mino.MAX_SIZE)
     );
-    // this.virtualCanvas.width = Const.BLOCK_SIZE * Const.FIELD_COL;
-    // this.virtualCanvas.height = Const.BLOCK_SIZE * (Const.FIELD_ROW + this.minoClass.MAX_SIZE);
+    this.virtualCanvas.width = this.fieldRect.right;
+    this.virtualCanvas.height = this.fieldRect.bottom;
+  }
+
+  drawBlock(ctx, position, fillStyle, alpha = 1) {
+    const g = ctx;
+    const x = position.x;
+    const y = position.y;
+    g.save();
+    g.strokeStyle = "white";
+    g.lineWidth = 2;
+    g.fillStyle = fillStyle;
+    g.globalAlpha = alpha;
+    g.fillRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+    g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+    g.restore();
   }
 
   /**
@@ -407,36 +415,41 @@ class View {
    */
   drawField(field) {
     const fieldCanvas = this.virtualCanvas;
-    fieldCanvas.width = this.fieldRect.right;
-    fieldCanvas.height = this.fieldRect.bottom;
     const g = fieldCanvas.getContext('2d');
-    g.fillStyle = "black";
-    g.fillRect(0, 0, fieldCanvas.width, fieldCanvas.height);
-    const typeColorArray = this.constructor.getTypeColorArray();
+    g.clearRect(0, 0, fieldCanvas.width, fieldCanvas.height);
     g.strokeStyle = "white";
     g.lineWidth = 2;
     for (let y = 0; y < field.row; y++) {
       for (let x = 0; x < field.col; x++) {
         if (field.getPositionBlock(x, y)) {
-          g.fillStyle = typeColorArray[field.getPositionBlock(x, y) - 1];
-          g.fillRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
-          g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+          const color = View.COLOR_LIST[field.getPositionBlock(x, y) - 1];
+          this.drawBlock(g, new Vector2(x, y), color);
         } else {
           g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
         }
       }
     }
-    const showStartY = Const.BLOCK_SIZE * this.minoClass.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
+    const sx = 0;
+    const sy = Const.BLOCK_SIZE * Mino.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
     const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
-    const paddingY = this.canvas.height / 2 - (fieldCanvas.height - showStartY) / 2;
+    const paddingY = this.canvas.height / 2 - (fieldCanvas.height - sy) / 2;
     this.context.fillStyle = "black";
     this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.context.drawImage(fieldCanvas,
-      0, showStartY, fieldCanvas.width, fieldCanvas.height - showStartY,
-      paddingX, paddingY, fieldCanvas.width, fieldCanvas.height - showStartY);
+      sx, sy, fieldCanvas.width, fieldCanvas.height - sy,
+      paddingX, paddingY, fieldCanvas.width, fieldCanvas.height - sy);
   }
 
-  drawBlock() {
+  /**
+   * @param {Field} field
+   */
+  drawMino(field) {
+    const mino = field.mino;
+    const fieldCanvas = this.virtualCanvas;
+    const g = fieldCanvas.getContext('2d');
+  }
+
+  draw() {
 
   }
 }
@@ -444,13 +457,11 @@ class View {
 class Game {
 
   constructor() {
-    const viewClass = Const.VIEW_CLASS;
-    this.view = new viewClass(
+    this.view = new View(
       Const.MAIN_CANVAS,
       window.innerWidth,
       window.innerHeight,
-      Const.NEXT_COUNT,
-      Const.MINO_CLASS
+      Const.NEXT_COUNT
     );
     this.startSettings();
     this.stopFlg = true;
@@ -468,12 +479,10 @@ class Game {
   start() {
     clearTimeout(this.downTimeout);
     clearTimeout(this.nextTimeout);
-    const fieldClass = Const.FIELD_CLASS;
-    this.field = new fieldClass(
+    this.field = new Field(
       Const.FIELD_COL,
       Const.FIELD_ROW,
-      Const.NEXT_COUNT,
-      Const.MINO_CLASS
+      Const.NEXT_COUNT
     );
     this.startSettings();
     this.stopFlg = false;
