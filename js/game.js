@@ -426,7 +426,7 @@ class View {
         }
       }
     }
-    const showStartY = Const.BLOCK_SIZE * this.minoClass.MAX_SIZE + Const.BLOCK_SIZE * 0.7;
+    const showStartY = Const.BLOCK_SIZE * this.minoClass.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
     const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
     const paddingY = this.canvas.height / 2 - (fieldCanvas.height - showStartY) / 2;
     this.context.fillStyle = "black";
