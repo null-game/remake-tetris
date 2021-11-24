@@ -81,9 +81,8 @@ class Mino {
   }
 
   /**
-   * コンストラクタ
+   * ミノクラス
    * @param {Mino} mino 
-   * @returns 
    */
   constructor(mino) {
     if (mino) {
@@ -198,6 +197,12 @@ class Field {
     ];
   }
 
+  /**
+   * フィールドクラス
+   * @param {number} col 
+   * @param {number} row 
+   * @param {number} nextCount 
+   */
   constructor(col, row, nextCount) {
     this.col = col;
     this.row = row + Mino.MAX_SIZE;
@@ -368,6 +373,13 @@ class View {
     ];
   }
 
+  /**
+   * 表示クラス
+   * @param {HTMLCanvasElement} canvas 
+   * @param {number} width 
+   * @param {number} height 
+   * @param {number} nextCount 
+   */
   constructor(canvas, width, height, nextCount) {
     this.canvas = canvas;
     this.virtualCanvas = document.createElement('canvas');
@@ -387,6 +399,13 @@ class View {
     this.virtualCanvas.height = this.fieldRect.bottom;
   }
 
+  /**
+   * ブロック描画
+   * @param {CanvasRenderingContext2D} ctx 
+   * @param {Vector2} position 
+   * @param {CanvasFillStrokeStyles} fillStyle 
+   * @param {CanvasCompositing} alpha 
+   */
   drawBlock(ctx, position, fillStyle, alpha = 1) {
     const g = ctx;
     const x = position.x;
@@ -464,8 +483,9 @@ class View {
   }
 
   /**
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {Canvas} img
+   * 画像描画
+   * @param {CanvasDrawImage} ctx
+   * @param {CanvasImageSource} img
    * @param {Rectangle} rect1
    * @param {Rectangle} rect2
    */
@@ -478,6 +498,9 @@ class View {
 
 class Game {
 
+  /**
+   * ゲームクラス
+   */
   constructor() {
     this.view = new View(
       Const.MAIN_CANVAS,
