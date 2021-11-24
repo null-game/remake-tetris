@@ -16,6 +16,26 @@
       body {
         overflow: hidden;
       }
+      .controller {
+        position: relative;
+        margin: 0 auto;
+        z-index: 100;
+        pointer-events: none;
+      }
+      .btn {
+        position: absolute;
+        pointer-events: auto;
+        width: 80px;
+        height: 80px;
+        border: solid 2px rgb(131, 115, 115);
+        background-color: rgba(50, 50, 50, 0.3);
+        color: white;
+        font-size: xx-large;
+      }
+
+      .btn-circle {
+        border-radius: 50%;
+      }
     </style>
     <script src="./js/engine.js" defer></script>
     <script src="./js/const.js" defer></script>
@@ -24,6 +44,14 @@
   </head>
 
   <body>
-    <canvas id="game-view"></canvas>
+    <div class="container">
+      <div class="controller">
+        <!--
+        <button class="btn btn-circle">A</button>
+        <button class="btn btn-circle">B</button>
+        -->
+      </div>
+      <canvas id="game-view"></canvas>
+    </div>
   </body>
 </html>

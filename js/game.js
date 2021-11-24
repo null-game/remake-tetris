@@ -443,19 +443,36 @@ class View {
       }
     }
     // 実際のキャンバスに転写
-    const sx = 0;
-    const sy = Const.BLOCK_SIZE * Mino.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
-    const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
-    const paddingY = this.canvas.height / 2 - (fieldCanvas.height - sy) / 2;
-    this.context.fillStyle = "black";
-    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    this.context.drawImage(fieldCanvas,
-      sx, sy, fieldCanvas.width, fieldCanvas.height - sy,
-      paddingX, paddingY, fieldCanvas.width, fieldCanvas.height - sy);
+    this.draw();
+    const fx = 0;
+    const fy = Const.BLOCK_SIZE * Mino.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
+    const fw = fieldCanvas.width;
+    const fh = fieldCanvas.height - fy;
+    const vx = this.canvas.width / 2 - fw / 2;
+    const vy = this.canvas.height / 2 - fh / 2;
+    const fieldRect = new Rectangle(fx, fy, fw, fh);
+    const viewRect = new Rectangle(vx, vy, fw, fh);
+    this.drawImage(this.context, fieldCanvas, fieldRect, viewRect);
   }
 
   draw() {
+    const g = this.context;
+    g.save();
+    g.fillStyle = "black";
+    g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    g.restore();
+  }
 
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {Canvas} img
+   * @param {Rectangle} rect1
+   * @param {Rectangle} rect2
+   */
+  drawImage(ctx, img, rect1, rect2) {
+    ctx.drawImage(img,
+      rect1.left, rect1.top, rect1.right, rect1.bottom,
+      rect2.left, rect2.top, rect2.right, rect2.bottom);
   }
 }
 

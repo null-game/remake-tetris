@@ -150,6 +150,12 @@ class Vector2 {
 }
 
 class Rectangle {
+  /**
+   * @param {number} left 
+   * @param {number} top 
+   * @param {number} right 
+   * @param {number} bottom 
+   */
   constructor(left, top, right, bottom) {
     this.left = left;
     this.top = top;
