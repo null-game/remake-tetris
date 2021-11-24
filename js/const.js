@@ -7,4 +7,5 @@ class Const {
 	static get NEXT_COUNT() { return 6 }
 	static get MAIN_CANVAS() { return document.getElementById('game-view') }
 	static get BLOCK_SIZE() { return 30 }
+	static get SHADOW_ALPHA() { return 0.3 }
 }

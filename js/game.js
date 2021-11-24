@@ -392,11 +392,12 @@ class View {
     const x = position.x;
     const y = position.y;
     g.save();
-    g.strokeStyle = "white";
-    g.lineWidth = 2;
     g.fillStyle = fillStyle;
     g.globalAlpha = alpha;
     g.fillRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+    g.lineWidth = 2;
+    g.globalAlpha = 1;
+    g.strokeStyle = "white";
     g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
     g.restore();
   }
@@ -406,22 +407,42 @@ class View {
    * @param {Field} field
    */
   drawField(field) {
+    // 仮想キャンバスを取得
     const fieldCanvas = this.virtualCanvas;
     const g = fieldCanvas.getContext('2d');
+    // 仮想キャンバスをクリア
     g.clearRect(0, 0, fieldCanvas.width, fieldCanvas.height);
-    g.strokeStyle = "white";
-    g.lineWidth = 2;
-    for (let y = 0; y < field.row; y++) {
-      for (let x = 0; x < field.col; x++) {
-        if (field.getPositionBlock(x, y)) {
-          const color = View.COLOR_LIST[field.getPositionBlock(x, y) - 1];
-          this.drawBlock(g, new Vector2(x, y), color);
+    // フィールドを描画
+    for (const v = Vector2.ZERO; v.y < field.row; v.y++) {
+      for (v.x = 0; v.x < field.col; v.x++) {
+        if (field.getPositionBlock(v.x, v.y)) {
+          const color = View.COLOR_LIST[field.getPositionBlock(v.x, v.y) - 1];
+          this.drawBlock(g, v, color);
         } else {
-          g.strokeRect(x * Const.BLOCK_SIZE, y * Const.BLOCK_SIZE, Const.BLOCK_SIZE, Const.BLOCK_SIZE);
+          const color = "rgba(0, 0, 0, 0)";
+          this.drawBlock(g, v, color);
         }
       }
     }
-    this.drawMino(field);
+    // 操作中ミノの影表示位置を算出
+    const shadowPosition = Vector2.ZERO;
+    while (field.checkMove(Vector2.add(shadowPosition, Vector2.DOWN))) {
+      shadowPosition.add(Vector2.DOWN);
+    }
+    // 操作中ミノと影を描画
+    const mino = field.mino;
+    const minoSize = mino.getSize();
+    for (const v = Vector2.ZERO; v.y < minoSize; v.y++) {
+      for (v.x = 0; v.x < minoSize; v.x++) {
+        if (mino.getPointBlock(v.x, v.y)) {
+          const color = View.COLOR_LIST[mino.getPointBlock(v.x, v.y) - 1];
+          const position = Vector2.add(mino.position, v);
+          this.drawBlock(g, position, color);
+          this.drawBlock(g, position.add(shadowPosition), color, Const.SHADOW_ALPHA);
+        }
+      }
+    }
+    // 実際のキャンバスに転写
     const sx = 0;
     const sy = Const.BLOCK_SIZE * Mino.MAX_SIZE - Const.BLOCK_SIZE * 0.3;
     const paddingX = this.canvas.width / 2 - fieldCanvas.width / 2;
@@ -431,32 +452,6 @@ class View {
     this.context.drawImage(fieldCanvas,
       sx, sy, fieldCanvas.width, fieldCanvas.height - sy,
       paddingX, paddingY, fieldCanvas.width, fieldCanvas.height - sy);
-  }
-
-  /**
-   * @param {Field} field
-   */
-  drawMino(field) {
-    const mino = field.mino;
-    const fieldCanvas = this.virtualCanvas;
-    const g = fieldCanvas.getContext('2d');
-    const minoSize = mino.getSize();
-
-    const shadowPosition = Vector2.ZERO;
-    while (field.checkMove(shadowPosition.clone().add(Vector2.DOWN))) {
-      shadowPosition.add(Vector2.DOWN);
-    }
-
-    for (const v = Vector2.ZERO; v.y < minoSize; v.y++) {
-      for (v.x = 0; v.x < minoSize; v.x++) {
-        if (mino.getPointBlock(v.x, v.y)) {
-          const color = View.COLOR_LIST[mino.getPointBlock(v.x, v.y) - 1];
-          const position = v.clone().add(mino.position);
-          this.drawBlock(g, position, color);
-          this.drawBlock(g, position.add(shadowPosition), color, 0.3);
-        }
-      }
-    }
   }
 
   draw() {
